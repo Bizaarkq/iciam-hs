@@ -1,0 +1,153 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+ 
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  PUBLISHER
+  USER
+}
+ 
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  username      String?         @unique
+  email         String?         @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  roles         Role            @default(USER)
+  blocked       Boolean         @default(false)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  Post Post[]
+  Comment Comment[]
+  Like Like[]
+}
+ 
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String  @unique
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User?   @relation(fields: [userId], references: [id])
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+ 
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+ 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Post {
+  id            String   @id @default(cuid())
+  title         String
+  introduction  String
+  content       String
+  published     Boolean  @default(false)
+  publishedAt   DateTime?
+  author        User?    @relation(fields: [authorId], references: [id])
+  authorId      String?
+  categories    Category? @relation(fields: [categoryId], references: [id])
+  categoryId    String?
+  document      String?
+  timeToRead    Int?
+  views         Int      @default(0)
+  isRequested   Boolean  @default(false)
+
+  tags   PostTag[]
+  comments  Comment[]
+  likes     Like[]
+ 
+  createdAt DateTime @default(now())
+  createdUser String
+  updatedAt DateTime @updatedAt
+  updatedUser String
+  deletedAt DateTime?
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  posts     Post[]
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  posts     PostTag[]
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PostTag {
+  id        String   @id @default(cuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  tag       Tag      @relation(fields: [tagId], references: [id])
+  tagId     String
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  censor    Boolean  @default(false)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
